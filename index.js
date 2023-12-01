@@ -33,7 +33,8 @@ app.post("/v1", (req, res) => {
   let headers = data.headers ? data.headers : {};
   let ua = headers["user-agent"]
     ? decodeURIComponent(headers["user-agent"])
-    : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36";
+    : "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36";
+  let email = data.email ? data.email : "example@gmail.com";
   let cookie = headers["cookie"] ? headers["cookie"] : "";
   let header = headers
     ? JSON.stringify(headers)
@@ -41,13 +42,8 @@ app.post("/v1", (req, res) => {
   let proxy = data.proxy ? decodeURIComponent(data.proxy) : "";
   let method = data.method ? data.method.toUpperCase() : "GET";
   console.log("v2:" + url);
-  if (process.pid !== undefined) {
-    console.log(process.pid);
-    console.log(JSON.stringify(data.data));
-    webCrawl(res, url, ua, header, proxy, cookie, method, data.data);
-  } else {
-    console.log("PID ERROR V2!");
-  }
+  console.log(JSON.stringify(data.data));
+  webCrawl(res, url, ua, header, proxy, cookie, method, data.data);
 });
 
 app.listen(PORT, () => {
