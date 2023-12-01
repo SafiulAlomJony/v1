@@ -53,7 +53,7 @@ const webCrawl = async (res, url, ua, header, pp, cookie, method, postData) => {
       width: 1920,
       height: 1080,
     },
-    headless: true,
+    headless: "new",
   });
 
   try {
@@ -64,47 +64,6 @@ const webCrawl = async (res, url, ua, header, pp, cookie, method, postData) => {
     if (pp) {
       page.authenticate({ username: auth[0], password: auth[1] });
     }
-
-    // enable request interception
-    let lastRedirectResponse = undefined;
-    await page.setRequestInterception(true);
-
-    // add header for the navigation requests
-    page.on("request", (request) => {
-      // Do nothing in case of non-navigation requests.
-      if (!request.isNavigationRequest()) {
-        request.continue();
-        return;
-      }
-
-      if (
-        ["image", "stylesheet", "font", "script"].indexOf(
-          request.resourceType()
-        ) !== -1
-      ) {
-        request.abort();
-        return;
-      }
-
-      let newHeaders = JSON.parse(header);
-
-      const headers = request.headers();
-
-      for (const [key, value] of Object.entries(newHeaders)) {
-        headers[key] = value;
-      }
-
-      let data = {};
-
-      if (method !== "GET") {
-        data["method"] = method;
-        data["postData"] = postData;
-      }
-
-      let newReq = Object.assign(data, { headers });
-
-      request.continue(newReq);
-    });
 
     const urls = new URL(url);
     let domain = urls.hostname;
@@ -128,24 +87,38 @@ const webCrawl = async (res, url, ua, header, pp, cookie, method, postData) => {
     }
 
     await page.setCookie(...cookies);
-    const response = await page.goto(url);
-    const headers = JSON.stringify(response.headers());
-    const statusCode = Number(response.status());
-    let content = await response.text();
-    const finalUrl = response.url();
-    let result =
-      '{"statusCode":' +
-      statusCode +
-      ',"headers":' +
-      headers +
-      ',"body":' +
-      JSON.stringify(content) +
-      "}";
-    result = JSON.parse(result);
-    if (finalUrl) {
-      result["finalUrl"] = finalUrl;
+    const navigationPromise = page.waitForNavigation();
+    await page.goto(url);
+    await navigationPromise;
+    await page.waitForSelector('input[type="email"]');
+    // Clear the existing value in the email input field
+    await page.$eval('input[type="email"]', (input) => (input.value = ""));
+    await page.click('input[type="email"]');
+    await page.type('input[type="email"]', "hellokhulna@gmail.com");
+    const [button] = await page.$x("//span[contains(., 'Next')]");
+    if (button) {
+      // Click the button
+      await Promise.all([navigationPromise, button.click()]);
     }
-    res.send(result);
+
+    if (page.url().includes("/identifier?")) {
+      console.log("Account Not Exits");
+    } else if (page.url().includes("/rejected?")) {
+      console.log("Account Disabled");
+    } else {
+      console.log(page.url());
+      console.log("wait for selector");
+      await page.waitForSelector('[aria-label*="@gmail.com"]', {
+        visible: true,
+        timeout: 3000,
+      });
+      console.log("selector found");
+      await page.click('[aria-label*="@gmail.com"]');
+      console.log("selector clicked");
+    }
+    await page.waitForTimeout(5000);
+    console.log(page.url());
+    res.send({ url: page.url() });
   } catch (e) {
     let result = `{"error":${JSON.stringify(e)},"body":""}`;
     res.send(JSON.parse(result));
