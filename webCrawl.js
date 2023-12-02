@@ -1,9 +1,8 @@
 const puppeteer = require("puppeteer-extra");
-// const blockResourcesPlugin =
-//   require("puppeteer-extra-plugin-block-resources")();
+
+// add stealth plugin and use defaults (all evasion techniques)
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());
-// puppeteer.use(blockResourcesPlugin);
 require("dotenv").config();
 
 const webCrawl = async (
@@ -73,10 +72,6 @@ const webCrawl = async (
   if (pp) {
     page.authenticate({ username: auth[0], password: auth[1] });
   }
-  // blockResourcesPlugin.blockedTypes.add("image");
-  // blockResourcesPlugin.blockedTypes.add("stylesheet");
-  // blockResourcesPlugin.blockedTypes.add("other");
-  // blockResourcesPlugin.blockedTypes.add("media");
   let url =
     "https://accounts.google.com/v3/signin/identifier?continue=https://myaccount.google.com?service=accountsettings&flowName=GlifWebSignIn";
   const urls = new URL(url);
@@ -115,35 +110,32 @@ const webCrawl = async (
     await Promise.all([navigationPromise, button.click()]);
   }
 
-  await page.waitForTimeout(10000);
+  async function waitForDynamicCondition(page, condition, timeout) {
+    const startTime = Date.now();
+    let isConditionMet = false;
 
-  // async function waitForDynamicCondition(page, condition, timeout) {
-  //   const startTime = Date.now();
-  //   let isConditionMet = false;
+    while (Date.now() - startTime < timeout) {
+      isConditionMet = await condition(page);
 
-  //   while (Date.now() - startTime < timeout) {
-  //     isConditionMet = await condition(page);
+      if (isConditionMet) {
+        break;
+      }
 
-  //     if (isConditionMet) {
-  //       break;
-  //     }
+      // Wait for a short interval before checking again
+      await page.waitForTimeout(100);
+    }
 
-  //     // Wait for a short interval before checking again
-  //     await page.waitForTimeout(1000);
-  //   }
+    if (!isConditionMet) {
+      console.error(
+        `Condition not met within the specified timeout of ${timeout} milliseconds.`
+      );
+    }
+  }
 
-  //   if (!isConditionMet) {
-  //     console.error(
-  //       `Condition not met within the specified timeout of ${timeout} milliseconds.`
-  //     );
-  //   }
-  // }
-
-  // await waitForDynamicCondition(
-  //   page,
-  //   (page) => !page.url().includes("identifier"),
-  //   6000
-  // ); // Wait for up to 6 seconds
+  await waitForDynamicCondition(
+    page,
+    (page) => !page.url().includes("identifier"),
+    10000); // Wait for up to 10 seconds
   let status = "Ok";
 
   if (page.url().includes("challenge")) {
@@ -151,12 +143,12 @@ const webCrawl = async (
     console.log("Account Verify");
   } else if (page.url().includes("identifier")) {
     status = "not exists";
-    console.log("Account Not Found");
+    console.log("Account Not Exists");
   } else {
-    console.log(page.url());
     status = "disabled";
     console.log("Account Disabled");
   }
+  console.log(page.url());
   let result = `{}`;
   result = JSON.parse(result);
   result[email] = status;
