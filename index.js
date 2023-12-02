@@ -1,6 +1,9 @@
 const express = require("express");
+const puppeteer = require("puppeteer");
 const bodyParser = require("body-parser");
 const { webCrawl } = require("./webCrawl");
+// const puppeteer = require("puppeteer-extra");
+// const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const app = express();
 
 const PORT = process.env.PORT || 4000;
@@ -16,17 +19,17 @@ app.use(function (err, req, res, next) {
 });
 
 app.get("/", (req, res) => {
-  res.send("Welcome to Automation Master API!");
+  res.send("Welcome to Scrape Master!");
 });
 
 app.get("/v1", (req, res) => {
-  res.send("Gmail Checker v1 Running!\nLast Update: 11:23am 02/12/2023");
+  res.send("Gmail Checker v1 Running!\nLast Update: 2:27pm 02/12/2023");
 });
 
 app.post("/v1", (req, res) => {
   res.setHeader("Content-Type", "application/json");
   let data = req.body;
-  // let url = data.url ? decodeURI(data.url) : "https://example.com";
+  let url = data.url ? decodeURI(data.url) : "https://example.com";
   let headers = data.headers ? data.headers : {};
   let ua = headers["user-agent"]
     ? decodeURIComponent(headers["user-agent"])
@@ -38,7 +41,9 @@ app.post("/v1", (req, res) => {
     : '{"X-Powered-By": "Cloudflare"}';
   let proxy = data.proxy ? decodeURIComponent(data.proxy) : "";
   let method = data.method ? data.method.toUpperCase() : "GET";
-  webCrawl(res, email, ua, header, proxy, cookie, method, data.data);
+  console.log("v2:" + url);
+  console.log(JSON.stringify(data.data));
+  webCrawl(res, url, ua, header, proxy, cookie, method, data.data);
 });
 
 app.listen(PORT, () => {
