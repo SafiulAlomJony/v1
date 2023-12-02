@@ -1,9 +1,9 @@
 const puppeteer = require("puppeteer-extra");
-const blockResourcesPlugin =
-  require("puppeteer-extra-plugin-block-resources")();
+// const blockResourcesPlugin =
+//   require("puppeteer-extra-plugin-block-resources")();
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());
-puppeteer.use(blockResourcesPlugin);
+// puppeteer.use(blockResourcesPlugin);
 require("dotenv").config();
 
 const webCrawl = async (
@@ -73,10 +73,10 @@ const webCrawl = async (
   if (pp) {
     page.authenticate({ username: auth[0], password: auth[1] });
   }
-  blockResourcesPlugin.blockedTypes.add("image");
-  blockResourcesPlugin.blockedTypes.add("stylesheet");
-  blockResourcesPlugin.blockedTypes.add("other");
-  blockResourcesPlugin.blockedTypes.add("media");
+  // blockResourcesPlugin.blockedTypes.add("image");
+  // blockResourcesPlugin.blockedTypes.add("stylesheet");
+  // blockResourcesPlugin.blockedTypes.add("other");
+  // blockResourcesPlugin.blockedTypes.add("media");
   let url =
     "https://accounts.google.com/v3/signin/identifier?continue=https://myaccount.google.com?service=accountsettings&flowName=GlifWebSignIn";
   const urls = new URL(url);
