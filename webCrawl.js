@@ -115,33 +115,35 @@ const webCrawl = async (
     await Promise.all([navigationPromise, button.click()]);
   }
 
-  async function waitForDynamicCondition(page, condition, timeout) {
-    const startTime = Date.now();
-    let isConditionMet = false;
+  await page.waitForTimeout(10000);
 
-    while (Date.now() - startTime < timeout) {
-      isConditionMet = await condition(page);
+  // async function waitForDynamicCondition(page, condition, timeout) {
+  //   const startTime = Date.now();
+  //   let isConditionMet = false;
 
-      if (isConditionMet) {
-        break;
-      }
+  //   while (Date.now() - startTime < timeout) {
+  //     isConditionMet = await condition(page);
 
-      // Wait for a short interval before checking again
-      await page.waitForTimeout(100);
-    }
+  //     if (isConditionMet) {
+  //       break;
+  //     }
 
-    if (!isConditionMet) {
-      console.error(
-        `Condition not met within the specified timeout of ${timeout} milliseconds.`
-      );
-    }
-  }
+  //     // Wait for a short interval before checking again
+  //     await page.waitForTimeout(1000);
+  //   }
 
-  await waitForDynamicCondition(
-    page,
-    (page) => !page.url().includes("identifier"),
-    6000
-  ); // Wait for up to 6 seconds
+  //   if (!isConditionMet) {
+  //     console.error(
+  //       `Condition not met within the specified timeout of ${timeout} milliseconds.`
+  //     );
+  //   }
+  // }
+
+  // await waitForDynamicCondition(
+  //   page,
+  //   (page) => !page.url().includes("identifier"),
+  //   6000
+  // ); // Wait for up to 6 seconds
   let status = "Ok";
 
   if (page.url().includes("challenge")) {
