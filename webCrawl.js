@@ -5,16 +5,7 @@ const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());
 require("dotenv").config();
 
-const webCrawl = async (
-  res,
-  email,
-  ua,
-  header,
-  pp,
-  cookie,
-  method,
-  postData
-) => {
+const webCrawl = async (res, url, ua, header, pp, cookie, method, postData) => {
   function isJson(item) {
     let value = typeof item !== "string" ? JSON.stringify(item) : item;
     try {
@@ -65,66 +56,75 @@ const webCrawl = async (
     headless: "new",
   });
 
-  const page = await browser.newPage();
-  if (ua) {
-    await page.setUserAgent(ua);
-  }
-  if (pp) {
-    page.authenticate({ username: auth[0], password: auth[1] });
-  }
-  let url =
-    "https://accounts.google.com/v3/signin/identifier?continue=https://myaccount.google.com?service=accountsettings&flowName=GlifWebSignIn";
-  const urls = new URL(url);
-  let domain = urls.hostname;
-  let cookies = [];
+  try {
+    const page = await browser.newPage();
+    if (ua) {
+      await page.setUserAgent(ua);
+    }
+    if (pp) {
+      page.authenticate({ username: auth[0], password: auth[1] });
+    }
 
-  cookie =
-    cookie.lastIndexOf(";") == cookie.length - 1
-      ? cookie.substring(0, cookie.length - 1)
-      : cookie;
-  if (cookie) {
-    cookie.split(/\s*;\s*/).forEach(function (pair) {
-      let data = {};
-      pair = pair.split(/\s*=\s*/);
-      var name = pair[0];
-      var value = pair.splice(1).join("=");
-      data["name"] = name;
-      data["value"] = value;
-      data["domain"] = domain;
-      cookies.push(data);
-    });
-  }
+    const urls = new URL(url);
+    let domain = urls.hostname;
+    let cookies = [];
 
-  await page.setCookie(...cookies);
-  const navigationPromise = page.waitForNavigation();
-  await page.goto(url);
-  await navigationPromise;
-  await page.waitForSelector('input[type="email"]');
-  // Clear the existing value in the email input field
-  await page.$eval('input[type="email"]', (input) => (input.value = ""));
-  await page.click('input[type="email"]');
-  await page.type('input[type="email"]', "hellokhulna@gmail.com");
-  const [button] = await page.$x("//span[contains(., 'Next')]");
-  if (button) {
-    // Click the button
-    await Promise.all([navigationPromise, button.click()]);
-  }
+    cookie =
+      cookie.lastIndexOf(";") == cookie.length - 1
+        ? cookie.substring(0, cookie.length - 1)
+        : cookie;
+    if (cookie) {
+      cookie.split(/\s*;\s*/).forEach(function (pair) {
+        let data = {};
+        pair = pair.split(/\s*=\s*/);
+        var name = pair[0];
+        var value = pair.splice(1).join("=");
+        data["name"] = name;
+        data["value"] = value;
+        data["domain"] = domain;
+        cookies.push(data);
+      });
+    }
 
-  await page.waitForTimeout(10000);
-  let status = "Ok";
-  if (page.url().includes("challenge")) {
-    status = "verify";
-    console.log("Account Verify");
-  } else {
-    status = "disabled";
-    console.log("Account Disabled");
+    await page.setCookie(...cookies);
+    const navigationPromise = page.waitForNavigation();
+    await page.goto(url);
+    await navigationPromise;
+    await page.waitForSelector('input[type="email"]');
+    // Clear the existing value in the email input field
+    await page.$eval('input[type="email"]', (input) => (input.value = ""));
+    await page.click('input[type="email"]');
+    await page.type('input[type="email"]', "hellokhulna@gmail.com");
+    const [button] = await page.$x("//span[contains(., 'Next')]");
+    if (button) {
+      // Click the button
+      await Promise.all([navigationPromise, button.click()]);
+    }
+
+    if (page.url().includes("/identifier?")) {
+      console.log("Account Not Exits");
+    } else if (page.url().includes("/rejected?")) {
+      console.log("Account Disabled");
+    } else {
+      console.log(page.url());
+      console.log("wait for selector");
+      await page.waitForSelector('[aria-label*="@gmail.com"]', {
+        visible: true,
+        timeout: 3000,
+      });
+      console.log("selector found");
+      await page.click('[aria-label*="@gmail.com"]');
+      console.log("selector clicked");
+    }
+    await page.waitForTimeout(5000);
+    console.log(page.url());
+    res.send({ url: page.url() });
+  } catch (e) {
+    let result = `{"error":${JSON.stringify(e)},"body":""}`;
+    res.send(JSON.parse(result));
+  } finally {
+    await browser.close();
   }
-  console.log(page.url());
-  let result = `{}`;
-  result = JSON.parse(result);
-  result[email] = status;
-  res.send(result);
-  await browser.close();
 };
 
 module.exports = { webCrawl };
