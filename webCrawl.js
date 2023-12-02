@@ -78,13 +78,14 @@ const webCrawl = async (
   }
   blockResourcesPlugin.blockedTypes.add("image");
   blockResourcesPlugin.blockedTypes.add("stylesheet");
-  // blockResourcesPlugin.blockedTypes.add("script");
+  blockResourcesPlugin.blockedTypes.add("other");
+  blockResourcesPlugin.blockedTypes.add("media");
 
   let url =
     "https://accounts.google.com/v3/signin/identifier?continue=https://myaccount.google.com?service=accountsettings&flowName=GlifWebSignIn";
 
   const navigationPromise = page.waitForNavigation();
-  await page.goto(url);
+  await page.goto(url, { waitUntil: "domcontentloaded" });
   await navigationPromise;
   console.log("Email: " + email);
   await page.waitForSelector('input[type="email"]');
@@ -97,15 +98,45 @@ const webCrawl = async (
     await Promise.all([navigationPromise, button.click()]);
   }
 
-  await page.waitForTimeout(10000);
+  async function waitForDynamicCondition(page, condition, timeout) {
+    const startTime = Date.now();
+    let isConditionMet = false;
+
+    while (Date.now() - startTime < timeout) {
+      isConditionMet = await condition(page);
+
+      if (isConditionMet) {
+        break;
+      }
+
+      // Wait for a short interval before checking again
+      await page.waitForTimeout(500);
+    }
+
+    if (!isConditionMet) {
+      console.error(
+        `Condition not met within the specified timeout of ${timeout} milliseconds.`
+      );
+    }
+  }
+
+  // Usage:
+  await waitForDynamicCondition(
+    page,
+    (page) => !page.url().includes("identifier"),
+    60000
+  ); // Wait for up to 60 seconds
+
   let status = "Ok";
-  if (page.url().includes("/rejected?")) {
+
+  if (!page.url().includes("identifier")) {
     status = "disabled";
     console.log("Account Disabled");
   } else {
     status = "verify";
     console.log("Account Verify");
   }
+
   res.send({ status: status });
   await browser.close();
 };
