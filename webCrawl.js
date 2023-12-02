@@ -103,47 +103,18 @@ const webCrawl = async (
   // Clear the existing value in the email input field
   await page.$eval('input[type="email"]', (input) => (input.value = ""));
   await page.click('input[type="email"]');
-  await page.type('input[type="email"]', email);
+  await page.type('input[type="email"]', "hellokhulna@gmail.com");
   const [button] = await page.$x("//span[contains(., 'Next')]");
   if (button) {
     // Click the button
     await Promise.all([navigationPromise, button.click()]);
   }
 
-  async function waitForDynamicCondition(page, condition, timeout) {
-    const startTime = Date.now();
-    let isConditionMet = false;
-
-    while (Date.now() - startTime < timeout) {
-      isConditionMet = await condition(page);
-
-      if (isConditionMet) {
-        break;
-      }
-
-      // Wait for a short interval before checking again
-      await page.waitForTimeout(100);
-    }
-
-    if (!isConditionMet) {
-      console.error(
-        `Condition not met within the specified timeout of ${timeout} milliseconds.`
-      );
-    }
-  }
-
-  await waitForDynamicCondition(
-    page,
-    (page) => !page.url().includes("identifier"),
-    10000); // Wait for up to 10 seconds
+  await page.waitForTimeout(10000);
   let status = "Ok";
-
   if (page.url().includes("challenge")) {
     status = "verify";
     console.log("Account Verify");
-  } else if (page.url().includes("identifier")) {
-    status = "not exists";
-    console.log("Account Not Exists");
   } else {
     status = "disabled";
     console.log("Account Disabled");
