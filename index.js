@@ -1,12 +1,9 @@
 const express = require("express");
-const puppeteer = require("puppeteer");
 const bodyParser = require("body-parser");
 const { webCrawl } = require("./webCrawl");
-// const puppeteer = require("puppeteer-extra");
-// const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const app = express();
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 4000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
