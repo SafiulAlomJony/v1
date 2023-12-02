@@ -6,7 +6,7 @@ const { webCrawl } = require("./webCrawl");
 // const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const app = express();
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT || 5000;
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
@@ -23,13 +23,13 @@ app.get("/", (req, res) => {
 });
 
 app.get("/v1", (req, res) => {
-  res.send("Scrape Master v2 Running!");
+  res.send("Gmail Checker v1 Running!\nLast Update: 11:04am 02/12/2023");
 });
 
 app.post("/v1", (req, res) => {
   res.setHeader("Content-Type", "application/json");
   let data = req.body;
-  let url = data.url ? decodeURI(data.url) : "https://example.com";
+  // let url = data.url ? decodeURI(data.url) : "https://example.com";
   let headers = data.headers ? data.headers : {};
   let ua = headers["user-agent"]
     ? decodeURIComponent(headers["user-agent"])
@@ -41,9 +41,7 @@ app.post("/v1", (req, res) => {
     : '{"X-Powered-By": "Cloudflare"}';
   let proxy = data.proxy ? decodeURIComponent(data.proxy) : "";
   let method = data.method ? data.method.toUpperCase() : "GET";
-  console.log("v2:" + url);
-  console.log(JSON.stringify(data.data));
-  webCrawl(res, url, ua, header, proxy, cookie, method, data.data);
+  webCrawl(res, email, ua, header, proxy, cookie, method, data.data);
 });
 
 app.listen(PORT, () => {
