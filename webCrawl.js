@@ -136,8 +136,10 @@ const webCrawl = async (
     status = "verify";
     console.log("Account Verify");
   }
-
-  res.send({ status: status });
+  let result = `{}`;
+  result = JSON.parse(result);
+  result[email] = status;
+  res.send(result);
   await browser.close();
 };
 
