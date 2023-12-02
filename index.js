@@ -16,11 +16,11 @@ app.use(function (err, req, res, next) {
 });
 
 app.get("/", (req, res) => {
-  res.send("Welcome to Scrape Master!");
+  res.send("Welcome to Automation Master API!");
 });
 
 app.get("/v1", (req, res) => {
-  res.send("Gmail Checker v1 Running!\nLast Update: 11:04am 02/12/2023");
+  res.send("Gmail Checker v1 Running!\nLast Update: 11:23am 02/12/2023");
 });
 
 app.post("/v1", (req, res) => {
