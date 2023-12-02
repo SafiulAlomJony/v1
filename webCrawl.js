@@ -5,7 +5,16 @@ const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());
 require("dotenv").config();
 
-const webCrawl = async (res, url, ua, header, pp, cookie, method, postData) => {
+const webCrawl = async (
+  res,
+  email,
+  ua,
+  header,
+  pp,
+  cookie,
+  method,
+  postData
+) => {
   function isJson(item) {
     let value = typeof item !== "string" ? JSON.stringify(item) : item;
     try {
@@ -64,7 +73,8 @@ const webCrawl = async (res, url, ua, header, pp, cookie, method, postData) => {
     if (pp) {
       page.authenticate({ username: auth[0], password: auth[1] });
     }
-
+    const url =
+      "https://accounts.google.com/v3/signin/identifier?continue=https://myaccount.google.com?service=accountsettings&flowName=GlifWebSignIn";
     const urls = new URL(url);
     let domain = urls.hostname;
     let cookies = [];
@@ -94,7 +104,7 @@ const webCrawl = async (res, url, ua, header, pp, cookie, method, postData) => {
     // Clear the existing value in the email input field
     await page.$eval('input[type="email"]', (input) => (input.value = ""));
     await page.click('input[type="email"]');
-    await page.type('input[type="email"]', "hellokhulna@gmail.com");
+    await page.type('input[type="email"]', email);
     const [button] = await page.$x("//span[contains(., 'Next')]");
     if (button) {
       // Click the button
