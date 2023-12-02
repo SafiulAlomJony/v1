@@ -2,6 +2,9 @@ const puppeteer = require("puppeteer-extra");
 
 // add stealth plugin and use defaults (all evasion techniques)
 const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+const blockResourcesPlugin =
+  require("puppeteer-extra-plugin-block-resources")();
+puppeteer.use(blockResourcesPlugin);
 puppeteer.use(StealthPlugin());
 require("dotenv").config();
 
@@ -47,8 +50,9 @@ const webCrawl = async (
 
   const browser = await puppeteer.launch({
     args: [
-      `--disable-setuid-sandbox`,
       `--no-sandbox`,
+      `--disable-setuid-sandbox`,
+      `--disable-dev-shm-usage`,
       `--single-process`,
       `--no-zygote`,
       `--window-size=1920,1080`,
@@ -62,7 +66,7 @@ const webCrawl = async (
       width: 1920,
       height: 1080,
     },
-    headless: "new",
+    headless: true,
   });
 
   const page = await browser.newPage();
@@ -72,30 +76,13 @@ const webCrawl = async (
   if (pp) {
     page.authenticate({ username: auth[0], password: auth[1] });
   }
+  blockResourcesPlugin.blockedTypes.add("image");
+  blockResourcesPlugin.blockedTypes.add("stylesheet");
+  // blockResourcesPlugin.blockedTypes.add("script");
+
   let url =
     "https://accounts.google.com/v3/signin/identifier?continue=https://myaccount.google.com?service=accountsettings&flowName=GlifWebSignIn";
-  const urls = new URL(url);
-  let domain = urls.hostname;
-  let cookies = [];
 
-  cookie =
-    cookie.lastIndexOf(";") == cookie.length - 1
-      ? cookie.substring(0, cookie.length - 1)
-      : cookie;
-  if (cookie) {
-    cookie.split(/\s*;\s*/).forEach(function (pair) {
-      let data = {};
-      pair = pair.split(/\s*=\s*/);
-      var name = pair[0];
-      var value = pair.splice(1).join("=");
-      data["name"] = name;
-      data["value"] = value;
-      data["domain"] = domain;
-      cookies.push(data);
-    });
-  }
-
-  await page.setCookie(...cookies);
   const navigationPromise = page.waitForNavigation();
   await page.goto(url);
   await navigationPromise;
@@ -109,10 +96,8 @@ const webCrawl = async (
   if (button) {
     await Promise.all([navigationPromise, button.click()]);
   }
-  await page.waitForSelector('[aria-label*="@gmail.com"]', {
-    visible: true,
-  });
-  
+
+  await page.waitForTimeout(10000);
   let status = "Ok";
   if (page.url().includes("/rejected?")) {
     status = "disabled";
@@ -121,7 +106,6 @@ const webCrawl = async (
     status = "verify";
     console.log("Account Verify");
   }
-
   res.send({ status: status });
   await browser.close();
 };
