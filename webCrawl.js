@@ -1,11 +1,9 @@
 const puppeteer = require("puppeteer-extra");
-
-// add stealth plugin and use defaults (all evasion techniques)
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 const blockResourcesPlugin =
   require("puppeteer-extra-plugin-block-resources")();
-puppeteer.use(blockResourcesPlugin);
+const StealthPlugin = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(StealthPlugin());
+puppeteer.use(blockResourcesPlugin);
 require("dotenv").config();
 
 const webCrawl = async (
@@ -50,9 +48,8 @@ const webCrawl = async (
 
   const browser = await puppeteer.launch({
     args: [
-      `--no-sandbox`,
       `--disable-setuid-sandbox`,
-      `--disable-dev-shm-usage`,
+      `--no-sandbox`,
       `--single-process`,
       `--no-zygote`,
       `--window-size=1920,1080`,
@@ -66,7 +63,7 @@ const webCrawl = async (
       width: 1920,
       height: 1080,
     },
-    headless: true,
+    headless: "new",
   });
 
   const page = await browser.newPage();
@@ -80,14 +77,33 @@ const webCrawl = async (
   blockResourcesPlugin.blockedTypes.add("stylesheet");
   blockResourcesPlugin.blockedTypes.add("other");
   blockResourcesPlugin.blockedTypes.add("media");
-
   let url =
     "https://accounts.google.com/v3/signin/identifier?continue=https://myaccount.google.com?service=accountsettings&flowName=GlifWebSignIn";
+  const urls = new URL(url);
+  let domain = urls.hostname;
+  let cookies = [];
 
+  cookie =
+    cookie.lastIndexOf(";") == cookie.length - 1
+      ? cookie.substring(0, cookie.length - 1)
+      : cookie;
+  if (cookie) {
+    cookie.split(/\s*;\s*/).forEach(function (pair) {
+      let data = {};
+      pair = pair.split(/\s*=\s*/);
+      var name = pair[0];
+      var value = pair.splice(1).join("=");
+      data["name"] = name;
+      data["value"] = value;
+      data["domain"] = domain;
+      cookies.push(data);
+    });
+  }
+
+  await page.setCookie(...cookies);
   const navigationPromise = page.waitForNavigation();
-  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await page.goto(url);
   await navigationPromise;
-  console.log("Email: " + email);
   await page.waitForSelector('input[type="email"]');
   // Clear the existing value in the email input field
   await page.$eval('input[type="email"]', (input) => (input.value = ""));
@@ -95,6 +111,7 @@ const webCrawl = async (
   await page.type('input[type="email"]', email);
   const [button] = await page.$x("//span[contains(., 'Next')]");
   if (button) {
+    // Click the button
     await Promise.all([navigationPromise, button.click()]);
   }
 
@@ -110,7 +127,7 @@ const webCrawl = async (
       }
 
       // Wait for a short interval before checking again
-      await page.waitForTimeout(500);
+      await page.waitForTimeout(100);
     }
 
     if (!isConditionMet) {
@@ -120,21 +137,23 @@ const webCrawl = async (
     }
   }
 
-  // Usage:
   await waitForDynamicCondition(
     page,
     (page) => !page.url().includes("identifier"),
-    60000
-  ); // Wait for up to 60 seconds
-
+    6000
+  ); // Wait for up to 6 seconds
   let status = "Ok";
 
-  if (!page.url().includes("identifier")) {
-    status = "disabled";
-    console.log("Account Disabled");
-  } else {
+  if (page.url().includes("challenge")) {
     status = "verify";
     console.log("Account Verify");
+  } else if (page.url().includes("identifier")) {
+    status = "not exists";
+    console.log("Account Not Found");
+  } else {
+    console.log(page.url());
+    status = "disabled";
+    console.log("Account Disabled");
   }
   let result = `{}`;
   result = JSON.parse(result);
