@@ -115,22 +115,21 @@ await page.waitForSelector('[aria-label*="@gmail.com"]').then(() => {
   if (page.url().includes("/rejected?")) {
     console.log("Account Disabled");
     res.send({ status: "disabled" });
-    browser.close();
   } else {
     console.log("Account Verify");
     res.send({ status: "verify" });
-    browser.close();
   }
   }).catch(e => {
     console.log(e);
-    browser.close();
-  });
-    }
+  });    
+  new Promise (r => (setTimeout(r,10000)));
+}
   } catch (e) {
     let result = `{"error":${JSON.stringify(e)},"body":""}`;
     res.send(JSON.parse(result));
   } finally {
-    // await browser.close();
+    
+    await browser.close();
   }
 };
 
